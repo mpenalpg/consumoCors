@@ -2,35 +2,85 @@
 
 import { useState } from 'react';
 import axios from 'axios';
-import './App.css'; // Si tienes estilos, si no, puedes quitarlo
+import CryptoJS from 'crypto-js';
+import './App.css'; 
 
 function App() {
   const [getResponse, setGetResponse] = useState('');
   const [postResponse, setPostResponse] = useState('');
-  const [postData, setPostData] = useState({ app_transaction_id: '', getClientIp: '', getClientUsername: '', card_holder: '', card_number: '', card_cvv: '', expiration_month: '', expiration_year: '', getPaymentConcept: '', getPaymentAmount: '' });
 
   // URL de tu API Slim (asegúrate de que coincida con lo que configuraste en Slim)
-  const API_URL = 'https://eventos.laprensagrafica.com/gatewayLPG';
+	const API_URL = 'https://eventos.laprensagrafica.com/gatewayLPG';
+	const AES_SECRET_KEY = CryptoJS.enc.Hex.parse('1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef');
+	const HMAC_SECRET_KEY = CryptoJS.enc.Hex.parse('fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321');
 
-  const handleGetRequest = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/getResponseDevExample`); // Consumiendo la ruta GET raíz
-      setGetResponse(response.data);
-    } catch (error) {
-      console.error('Error al hacer la solicitud GET:', error);
-      setGetResponse('Error al obtener los datos.');
-    }
-  };
 
-  const handlePostChange = (e) => {
-    const { name, value } = e.target;
-    setPostData(prevData => ({ ...prevData, [name]: value }));
-  };
+	function encryptSensitiveField(valueToEncrypt) {
+		// 1. Generar un IV único para cada encriptación (16 bytes = 128 bits para AES)
+		const iv = CryptoJS.lib.WordArray.random(16);
 
+		// 2. Encriptar el valor
+		const ciphertext = CryptoJS.AES.encrypt(valueToEncrypt, AES_SECRET_KEY, {
+			iv: iv,
+			mode: CryptoJS.mode.CBC,
+			padding: CryptoJS.pad.Pkcs7
+		}).toString();
+
+		// 3. Calcular el HMAC del texto cifrado
+		const hmac = CryptoJS.HmacSHA256(ciphertext, HMAC_SECRET_KEY).toString();
+
+		// 4. Devolver un objeto que contenga el IV, ciphertext y HMAC
+		// Convertir IV a una cadena hexadecimal para que sea fácil de transmitir
+		const ivHex = CryptoJS.enc.Hex.stringify(iv);
+
+		return {
+			iv: ivHex,
+			ciphertext: ciphertext,
+			hmac: hmac
+		};
+	}
+
+    const [postData, setFormData] = useState({
+        app_transaction_id: '',
+        getClientIp: '',
+        getClientUsername: '',
+        card_holder: '',
+        card_number: '',
+        card_cvv: '',
+        expiration_month: '',
+        expiration_year: '',
+        getPaymentConcept: '',
+        getPaymentAmount: ''
+    });
+
+    const handlePostChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prevData => ({
+            ...prevData,
+            [name]: value
+        }));
+    };
+	
   const handlePostSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${API_URL}/dev/payment`, postData, {
+		 const encryptedCar = encryptSensitiveField(postData.card_number);
+		 const encryptedCvv = encryptSensitiveField(postData.card_cvv);
+
+		const formData = {
+			app_transaction_id: postData.app_transaction_id,
+			getClientIp: postData.getClientIp,
+			getClientUsername: postData.getClientUsername,
+			card_holder: postData.card_holder,
+			card_number: encryptedCar,
+			card_cvv: encryptedCvv,
+			expiration_month: postData.expiration_month,
+			expiration_year: postData.expiration_year,
+			getPaymentConcept: postData.getPaymentConcept,
+			getPaymentAmount: postData.getPaymentAmount,
+		};
+		
+      const response = await axios.post(`${API_URL}/dev/payment2`, formData, {
         headers: {
 			Authorization: `Bearer U4OFU3QiRfqcO2AOVsd27W4KBDiJYdgkJPeOA9FLQuHf0v6bPoeSXt3lhT0VBEAh`,
 			'Content-Type': 'application/json' 
