@@ -11,8 +11,8 @@ function App() {
 
   // URL de tu API Slim (asegúrate de que coincida con lo que configuraste en Slim)
 	const API_URL = 'https://eventos.laprensagrafica.com/gatewayLPG';
-	const AES_SECRET_KEY = CryptoJS.enc.Hex.parse('1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef');
-	const HMAC_SECRET_KEY = CryptoJS.enc.Hex.parse('fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321');
+	const AES_SECRET_KEY = CryptoJS.enc.Hex.parse('a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2');
+	const HMAC_SECRET_KEY = CryptoJS.enc.Hex.parse('1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef');
 
 
 	function encryptSensitiveField(valueToEncrypt) {
@@ -80,7 +80,7 @@ function App() {
 			getPaymentAmount: postData.getPaymentAmount,
 		};
 		
-      const response = await axios.post(`${API_URL}/dev/payment2`, formData, {
+      const response = await axios.post(`${API_URL}/dev/payment`, formData, {
         headers: {
 			Authorization: `Bearer U4OFU3QiRfqcO2AOVsd27W4KBDiJYdgkJPeOA9FLQuHf0v6bPoeSXt3lhT0VBEAh`,
 			'Content-Type': 'application/json' 
